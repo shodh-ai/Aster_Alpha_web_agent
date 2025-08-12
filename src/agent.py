@@ -21,7 +21,16 @@ from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 logger = logging.getLogger("agent")
 
-load_dotenv(".env.local")
+import os
+load_dotenv(".env")
+
+# --- DEBUGGING BLOCK ---
+print("--- Loading LiveKit credentials from .env ---")
+print(f"LIVEKIT_URL: {os.environ.get('LIVEKIT_URL')}")
+print(f"LIVEKIT_API_KEY: {os.environ.get('LIVEKIT_API_KEY')}")
+print(f"LIVEKIT_API_SECRET: {'SET' if os.environ.get('LIVEKIT_API_SECRET') else 'NOT SET'}")
+print("-----------------------------------------")
+
 
 
 class Assistant(Agent):
@@ -65,7 +74,7 @@ async def entrypoint(ctx: JobContext):
     session = AgentSession(
         # A Large Language Model (LLM) is your agent's brain, processing user input and generating a response
         # See all providers at https://docs.livekit.io/agents/integrations/llm/
-        llm=google.LLM(model="gemini-1.5-flash"),
+        llm=google.LLM(model="gemini-2.5-flash"),
         # Speech-to-text (STT) is your agent's ears, turning the user's speech into text that the LLM can understand
         # See all providers at https://docs.livekit.io/agents/integrations/stt/
         stt=deepgram.STT(model="nova-3", language="multi"),
