@@ -1,3 +1,4 @@
+
 import logging
 import os
 import json 
@@ -34,44 +35,37 @@ print(f"LIVEKIT_API_KEY: {os.environ.get('LIVEKIT_API_KEY')}")
 print(f"LIVEKIT_API_SECRET: {'SET' if os.environ.get('LIVEKIT_API_SECRET') else 'NOT SET'}")
 print("-----------------------------------------")
 
-# --- DEFINE AGENT PERSONAS ---
+# --- Main Agent Definition ---
 
-class OverallAgent(Agent):
-    """This is the general-purpose, friendly assistant."""
+class AestrAlphaAgent(Agent):
+    """
+    This is the primary AI assistant for Aestr Alpha.
+    It is a helpful and friendly guide for prospective students.
+    """
     def __init__(self) -> None:
         super().__init__(
-            instructions="""You are a helpful voice AI assistant.
-            You eagerly assist users with their questions by providing information from your extensive knowledge.
-            Your responses are concise, to the point, and without any complex formatting or punctuation including emojis, asterisks, or other symbols.
-            You are curious, friendly, and have a sense of humor.""",
+            instructions="""You are a helpful and friendly voice AI assistant for an educational platform called Aestr Alpha.
+            You eagerly assist users with their questions about the platform, its courses, and career prospects.
+            Your responses are concise, encouraging, and to the point.
+            Avoid complex formatting or punctuation like emojis and asterisks.
+            You are curious and have a positive and supportive tone.
+            """,
         )
 
     @function_tool
-    async def lookup_weather(self, context: RunContext, location: str):
-        """Use this tool to look up current weather information in the given location."""
-        logger.info(f"Looking up weather for {location}")
-        return "sunny with a temperature of 70 degrees."
-
-class CounsellorAgent(Agent):
-    """This agent acts as an empathetic career counsellor."""
-    def __init__(self) -> None:
-        super().__init__(
-            instructions="""You are a friendly and empathetic career counsellor for Aestr Alpha.
-            Your goal is to understand the user's background, their degree, and their career aspirations.
-            Provide guidance on which Aestr Alpha programs, like 'Deep Cloud Engineering' or 'Fintech', would be the best fit for them.
-            Keep your answers encouraging and supportive.""",
-        )
-
-class AdminAgent(Agent):
-    """This agent provides factual, administrative information."""
-    def __init__(self) -> None:
-        super().__init__(
-            instructions="""You are an administrative assistant for Aestr Alpha.
-            You provide factual information about program logistics.
-            Answer questions about course duration (e.g., '6-month intensive track'), number of projects, class schedules, and how to apply.
-            Your tone is professional, clear, and direct.""",
-        )
-
+    async def get_course_details(self, context: RunContext, course_name: str):
+        """
+        Use this tool to get information about a specific course offered by Aestr Alpha.
+        Examples: 'Deep Cloud Engineering', 'Fintech', 'Robotics'.
+        """
+        logger.info(f"Looking up details for course: {course_name}")
+        # In a real application, you would fetch this from a database or a file.
+        if "cloud" in course_name.lower():
+            return "The Deep Cloud & Multi-Cloud Engineering program is a 6-month intensive track with over 4 live production projects. It's our most popular course for landing high-impact roles."
+        elif "fintech" in course_name.lower():
+            return "The FinTech Engineering course is a specialized program focused on building the future of money. It covers everything from blockchain to high-frequency trading systems."
+        else:
+            return f"I can't seem to find specific details on {course_name} right now, but our programs are designed to turn degrees into high-paying careers."
 
 def prewarm(proc: JobProcess):
     proc.userdata["vad"] = silero.VAD.load()
@@ -82,38 +76,13 @@ async def entrypoint(ctx: JobContext):
         "room": ctx.room.name,
     }
 
-    # DEFINITIVE FIX: --- AGENT ROUTING LOGIC ---
-    # The JobContext (ctx) contains the job information. The job itself
-    # has a 'participant' attribute which holds the ParticipantInfo,
-    # including the metadata we need.
-    
-    agent_mode = 'overall'  # Default mode
-    
-    # The correct attribute is ctx.job.participant
-    participant = ctx.job.participant
-
-    if participant and participant.metadata:
-        try:
-            # The metadata is a JSON string, so we parse it
-            metadata = json.loads(participant.metadata)
-            # We get the 'agent_mode' key we set in our frontend API
-            agent_mode = metadata.get('agent_mode', 'overall')
-        except json.JSONDecodeError:
-            logger.warning(f"Failed to decode metadata: {participant.metadata}")
-
-    logger.info(f"initiating agent with mode: {agent_mode}")
-
-    # Instantiate the correct agent based on the mode
-    agent: Agent
-    if agent_mode == 'counsellor':
-        agent = CounsellorAgent()
-    elif agent_mode == 'administration':
-        agent = AdminAgent()
-    else:
-        agent = OverallAgent()
+    # --- AGENT INITIALIZATION (SIMPLIFIED) ---
+    # We no longer need to check metadata. We will always use the main agent.
+    logger.info("Initializing AestrAlphaAgent...")
+    agent = AestrAlphaAgent()
 
     session = AgentSession(
-        llm=google.LLM(model="gemini-1.5-flash"),
+        llm=google.LLM(model="gemini-2.5-flash"),
         stt=deepgram.STT(model="nova-2", language="multi"),
         tts=cartesia.TTS(voice="6f84f4b8-58a2-430c-8c79-688dad597532"),
         turn_detection=MultilingualModel(),
