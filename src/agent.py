@@ -1,7 +1,7 @@
 
 import logging
 import os
-import json 
+import json
 from dotenv import load_dotenv
 
 from livekit.agents import (
@@ -19,7 +19,7 @@ from livekit.agents import (
     metrics,
 )
 from livekit.agents.llm import function_tool
-from livekit.plugins import cartesia, deepgram, google, noise_cancellation, silero
+from livekit.plugins import cartesia, deepgram, google, noise_cancellation, silero, elevenlabs
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -72,28 +72,30 @@ def prewarm(proc: JobProcess):
 
 
 async def entrypoint(ctx: JobContext):
+    # This block is indented one level (4 spaces)
     ctx.log_context_fields = {
         "room": ctx.room.name,
     }
 
-    # --- AGENT INITIALIZATION (SIMPLIFIED) ---
-    # We no longer need to check metadata. We will always use the main agent.
     logger.info("Initializing AestrAlphaAgent...")
     agent = AestrAlphaAgent()
 
+    # This is line 84. It MUST be indented at the same level as the lines above it.
     session = AgentSession(
-        llm=google.LLM(model="gemini-2.5-flash"),
+        llm=google.LLM(model="gemini-1.5-flash"),
         stt=deepgram.STT(model="nova-2", language="multi"),
-        tts=cartesia.TTS(voice="6f84f4b8-58a2-430c-8c79-688dad597532"),
+       tts=elevenlabs.TTS(),
         turn_detection=MultilingualModel(),
         vad=ctx.proc.userdata["vad"],
         preemptive_generation=True,
     )
 
-    # ... (Debugging and other event listeners remain the same) ...
+    # All the following code inside the function must also be indented at this same level.
     @session.on("vad_activity")
     def on_vad_activity(activity):
+        # This part is indented further, which is correct because it's inside the function decorator.
         print(f"[VAD DEBUG] Activity detected: type={activity.type.name}, confidence={activity.confidence}")
+
 
     @session.on("stt_transcript_received")
     def on_stt_transcript(interim: bool, text: str):
